@@ -1,91 +1,71 @@
 # Racer
 
-Racer is a realtime model synchronization engine for Node.js. It enables mutliple users to interact with the same data objects via sophisticated conflict detection and resolution algorithms. At the same time, it provides a simple object accessor and event interface for writing application logic.
+Racer is a realtime model synchronization engine for Node.js. By leveraging [ShareDB](https://github.com/share/sharedb), multiple users can interact with the same data in realtime via Operational Transformation, a sophisticated conflict resolution algorithm that works in realtime and with offline clients. ShareDB also supports PubSub across multiple servers for horizontal scaling. Clients can express data subscriptions and fetches in terms of queries and specific documents, so different clients can be subscribed to different overlapping sets of data. On top of this sophisticated backend, Racer provides a simple model and event interface for writing application logic.
 
-[![Build
-Status](https://secure.travis-ci.org/codeparty/racer.png)](http://travis-ci.org/codeparty/racer)
+[![Build Status](https://travis-ci.org/derbyjs/racer.svg)](https://travis-ci.org/derbyjs/racer)
 
 ## Disclaimer
 
-Racer is alpha software. While it should work well enough for prototyping and weekend projects, it is still undergoing major development. APIs are subject to change.
+Racer is alpha software. We are now on the road to a production ready version, but we are currently cleaning up the code, finishing loose ends, and testing.
 
-If you are interested in contributing, please reach out to [Brian](https://github.com/bnoguchi) and [Nate](https://github.com/nateps).
+If you are interested in contributing, please reach out to [Nate](https://github.com/nateps), [Joseph](https://github.com/josephg), and [Brian](https://github.com/bnoguchi).
 
 ## Demos
 
-There are currently two demos, which are included under the examples directory.
+There are currently two demos, which are included in the [racer-examples](https://github.com/derbyjs/racer-examples) repo.
 
-### Letters
-
-http://letters.racerjs.com/lobby
-
-The letters game allows for multiple players to drag around refrigerator magnet style letters in realtime. It supports multiple rooms, where the room name is the URL path.
-
-Letters demonstrates how applications can use Racer to provide application specific conflict resolution. Try using Firefox's Work Offline feature to move some letters while you move the same letters in another browser that is still connected. Then, disable offline mode and reconnect. Note that conflicting moves are shown along with the new moves that were successfully made. It is then possible to accept or override the moves that were already made.
-
-### Todos
-
-http://todos.racerjs.com/racer
-
-Todos is a classic todo list demo that demonstrates the use of Racer's array methods in a more realistic application. The application code does not handle conflicts, so conflicting changes simply fail to be applied.
-
-### Pad
-
-http://pad.racerjs.com/racer
-
-A bare-bones realtime, collaborative text editor. Demonstrates use of Racer's text OT methods.
+  * [Pad](https://github.com/derbyjs/racer-examples/tree/master/pad) &ndash; A very simple collaborative text editor.
+  * [Todos](https://github.com/derbyjs/racer-examples/tree/master/todos) &ndash; Classic todo list demonstrating the use of Racer's model methods.
 
 ## Features
 
-  * **Realtime updates** &ndash; Model methods automatically propagate changes among browser clients and Node servers in realtime. Clients may subscribe to a limited set of information relevant to the current session.
+  * **Realtime updates** &ndash; Model methods automatically propagate changes among browser clients and Node servers in realtime. The [racer-browserchannel](https://github.com/codeparty/racer-browserchannel) adapter is recommended for connecting browsers in realtime.
 
-  * **Conflict resolution** &ndash; When multiple clients attempt to change data in an inconsistent manner, Racer updates the models and notifies clients of conflicts. Model methods have callbacks that allow for application specific behavior.
+  * **Realtime query subscriptions** &ndash; Clients may subscribe to a limited set of information relevant to the current session. Both document and realtime query subscriptions are supported. Currently, arbitrary Mongo queries are supported.
+
+  * **Conflict resolution** &ndash; Leveraging ShareDB's JSON Operational Transformation algorithm, Racer will emit events that bring conflicting client states into eventual consistency. In addition to their synchronous API, model methods have callbacks for handling the resolved state after a server response.
 
   * **Immediate interaction** &ndash; Model methods appear to take effect immediately. Meanwhile, Racer sends updates to the server and checks for conflicts. If the updates are successful, they are stored and broadcast to other clients.
 
   * **Offline** &ndash; Since model methods are applied immediately, clients continue to work offline. Any changes to the local client or the global state automatically sync upon reconnecting.
 
-  * **Session middleware** &ndash; Connect middleware provides support for easy integration with Express and Connect sessions.
+  * **Unified server and client interface** &ndash; The same model interface can be used on the server for initial page rendering and on the client for user interaction. Racer supports bundling models created on the server and reinitializing them in the same state in the browser.
 
-  * **Unified server and client interface** &ndash; The same model interface can be used on the server for initial page rendering and on the client for synchronization and user interaction.
+  * **Persistent storage** &ndash; Racer uses [ShareDB](https://github.com/share/sharedb) to keep a journal of all data operations, publish operations to multiple frontend servers, and automatically persist documents. It currently supports MongoDB, and it can be easily adapted to support other document stores.
 
-  * **Persistent storage** &ndash; Racer provides automatic storage of data via
-    the [racer-db-mongo plugin](https://github.com/codeparty/racer-db-mongo). Racer
-    provides a straightforward API for implementing similar plugins for
-    document stores such as Riak, Couchdb, Postgres HSTORE, and other databases.
+  * **Access control** &ndash; (Under development) Racer will have hooks for access control to protect documents from malicious reads and writes.
 
-  * **Access control** &ndash; Racer provides a declarative access control API
-    to protect your queries and documents from malicious reads and writes.
+  * **Solr queries** &ndash; (Under development) A Solr adapter will support updating Solr indices as data change and queries for realtime updated search results.
+
 
 ## Future features
 
-  * **Browser local storage** &ndash; Browser models will also sync to HTML5 localStorage for persistent offline usage.
+  * **Browser local storage** &ndash; Pending changes and offline model data will also sync to HTML5 localStorage for persistent offline usage.
 
   * **Validation** &ndash; An implementation of shared and non-shared schema-based validation is planned.
 
-  * **More realtime strategies** &ndash; Currently, racer provides basic Software Transactional Memory (STM) and text Operational Transform (OT) methods. In the future it will receive a more robust STM, OT of JSON objects, and potentially other strategies like Diff-Match-Patch.
 
 ## Installation
 
-Install Racer with
+Racer requires [Node v0.10](http://nodejs.org/). You will also need to have a [MongoDB](http://docs.mongodb.org/manual/installation/) and a [Redis](http://redis.io/download) server running on your machine. The examples will connect via the default configurations.
 
 ```
 $ npm install racer
 ```
 
-In addition, racer requires Redis with scripting support for storing a journal of transactions. See the Derby [installation instructions](http://derbyjs.com/#getting_started).
-
 ## Tests
 
-The tests will flush Redis and MongoDB databases available via the default configurations, so don't run them in a production environment. The full suite currently requires a running Redis and MongoDB server to complete. Run the tests with
+Run the tests with
 
 ```
-$ make test
+$ npm test
 ```
 
 ## Usage
 
-For now, Racer is mostly documented along with Derby, an MVC framework that includes Racer. See the Derby [model docs](http://derbyjs.com/#models). Racer can be used independently, but Racer and Derby are designed to work well together.
+Racer can be used independently as shown in the examples, but Racer and Derby are designed to work especially well together. Racer can also be used along with other MVC frameworks, such as Angular.
+
+For now, Racer is mostly documented along with Derby. See the Derby [model docs](http://derbyjs.com/docs/derby-0.6/models).
 
 ### MIT License
 Copyright (c) 2011 by Brian Noguchi and Nate Smith
